@@ -74,9 +74,6 @@ jobs:
 
       - name: Build Cypress Container and Run
         uses: cypress-io/github-action@v6
-        with:
-          # start: npm run start
-          wait on: https://${{ vars.FRONTEND_URL }}
         # run: |
         #   kubectl get all -A
         #   # Launch cypress container
