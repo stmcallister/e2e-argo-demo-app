@@ -73,16 +73,14 @@ jobs:
       #   uses: lhotari/action-upterm@v1
 
       - name: Build Cypress Container and Run
-        run: |
-          kubectl get all -A
-          # Launch cypress container
-          cd e2e/
-          docker build -t burger-e2e:${{ github.sha }} .
-          docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
-          
-          # switch contexts
-          # kubectl config set-context your-cloud
-          
-          # launch apps in production
-          # kubectl apply -f k8s.yaml
+        uses: cypress-io/github-action@v6
+        with:
+          # start: npm run start
+          wait on: https://${{ vars.FRONTEND_URL }}
+        # run: |
+        #   kubectl get all -A
+        #   # Launch cypress container
+        #   cd e2e/
+        #   docker build -t burger-e2e:${{ github.sha }} .
+        #   docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
 
