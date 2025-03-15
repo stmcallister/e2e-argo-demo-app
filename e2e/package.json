@@ -7,9 +7,7 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run --browser chrome"
   },
-  "dependencies": {
-  },
   "devDependencies": {
-    "cypress": "^13.8.1"
+    "cypress": "^13.17.0"
   }
 }

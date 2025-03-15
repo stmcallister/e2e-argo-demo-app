@@ -1,0 +1,152 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: e2e-demo-
+spec:
+  entrypoint: e2e-pipeline
+  templates:
+    - name: checkout-code
+      container:
+        image: alpine/git:latest
+        command: [git, clone, 'https://github.com/stmcallister/e2e-argo-demo.git', '/app'] # Replace with your repo
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+      outputs:
+        artifacts:
+          - name: source-code
+            path: /app
+    - name: k3s-setup
+      container:
+        image: debianmaster/actions-k3s:latest
+        command: ["/bin/sh", "-c", "sleep 10"] # Simple sleep for k3s to be ready.
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+    - name: docker-login
+      container:
+        image: docker:20.10.16
+        command: ["docker", "login", "${{secrets.DOCKER_URL}}", "-u", "${{secrets.DOCKER_USER}}", "-p", "${{secrets.DOCKER_PASS}}"]
+        env:
+          - name: DOCKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets #create a secret in argoCD with the docker secrets.
+                key: DOCKER_URL
+          - name: DOCKER_USER
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets
+                key: DOCKER_USER
+          - name: DOCKER_AUTHTOKEN
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets
+                key: DOCKER_AUTHTOKEN
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+    - name: build-docker-images
+      container:
+        image: docker:20.10.16
+        command: ["/bin/sh", "-c", "set -e; set -x; cd backend; docker build -t ${{secrets.DOCKER_URL}}/burger-back:${{workflow.parameters.git-sha}} .; cd ../frontend; docker build -t ${{secrets.DOCKER_URL}}/burger-front:${{workflow.parameters.git-sha}} .; cd ../"]
+        env:
+          - name: DOCKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets
+                key: DOCKER_URL
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+      inputs:
+        artifacts:
+          - name: source-code
+            path: /app
+    - name: push-docker-images
+      container:
+        image: docker:20.10.16
+        command: ["/bin/sh", "-c", "docker push ${{secrets.DOCKER_URL}}/burger-back:${{workflow.parameters.git-sha}}; docker push ${{secrets.DOCKER_URL}}/burger-front:${{workflow.parameters.git-sha}}"]
+        env:
+          - name: DOCKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets
+                key: DOCKER_URL
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+    - name: configure-deploy-cluster
+      container:
+        image: bitnami/kubectl:latest
+        command: ["/bin/sh", "-c", "sed -i 's/DOCKER_URL/${{secrets.DOCKER_URL}}/g; s/IMAGE_LABEL/${{workflow.parameters.git-sha}}/g; s/FRONTEND_URL/${{workflow.parameters.FRONTEND_URL}}/g' k8s.yaml; helm repo add ngrok https://charts.ngrok.com; helm install ngrok-operator ngrok/ngrok-operator --namespace burgers --create-namespace --set credentials.apiKey=${{secrets.NGROK_API_KEY}} --set credentials.authtoken=${{secrets.NGROK_AUTHTOKEN}}; kubectl apply -f k8s.yaml; kubectl get all -A"]
+        env:
+          - name: DOCKER_URL
+            valueFrom:
+              secretKeyRef:
+                name: docker-secrets
+                key: DOCKER_URL
+          - name: NGROK_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: ngrok-secrets #Create an ngrok secret in argocd.
+                key: NGROK_API_KEY
+          - name: NGROK_AUTHTOKEN
+            valueFrom:
+              secretKeyRef:
+                name: ngrok-secrets
+                key: NGROK_AUTHTOKEN
+          - name: FRONTEND_URL
+            valueFrom:
+              secretKeyRef:
+                name: frontend-url #create a secret with the frontend url.
+                key: FRONTEND_URL
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+      inputs:
+        artifacts:
+          - name: source-code
+            path: /app
+    - name: build-cypress-run
+      container:
+        image: docker:20.10.16
+        command: ["/bin/sh","-c", "cd e2e/; docker build -t burger-e2e:${{workflow.parameters.git-sha}} .; docker run -e FRONTEND_URL='https://${{workflow.parameters.FRONTEND_URL}}' burger-e2e:${{workflow.parameters.git-sha}}"]
+        env:
+          - name: FRONTEND_URL
+            valueFrom:
+              secretKeyRef:
+                name: frontend-url
+                key: FRONTEND_URL
+        volumeMounts:
+          - name: workspace
+            mountPath: /app
+      inputs:
+        artifacts:
+          - name: source-code
+            path: /app
+    - name: e2e-pipeline
+      steps:
+        - name: checkout
+          template: checkout-code
+        - name: k3s
+          template: k3s-setup
+        - name: dockerlogin
+          template: docker-login
+        - name: buildimages
+          template: build-docker-images
+        - name: pushimages
+          template: push-docker-images
+        - name: deploy
+          template: configure-deploy-cluster
+        - name: cypress
+          template: build-cypress-run
+  arguments:
+    parameters:
+      - name: git-sha
+        value: "{{workflow.annotations.argocd.argoproj.io/revision}}" # get the git sha from ArgoCD
+      - name: FRONTEND_URL
+        value: "{{secret:frontend-url:FRONTEND_URL}}" #get the frontend url from a secret.
+  volumes:
+    - name: workspace
+      emptyDir: {}
