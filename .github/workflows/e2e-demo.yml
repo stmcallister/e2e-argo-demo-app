@@ -68,7 +68,7 @@ jobs:
       - name: Configure and Deploy Cluster
         run: |
           # Alter k8s.yaml to sed the version
-          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_URL }}/g' config-repo/k8s.yaml
+          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_TEST_URL }}/g' config-repo/k8s.yaml
 
           # # Install ngrok ingress controller
           # helm repo add ngrok https://charts.ngrok.com
@@ -91,7 +91,7 @@ jobs:
       #     # Launch cypress container
       #     cd e2e/
       #     docker build -t burger-e2e:${{ github.sha }} .
-      #     docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
+      #     docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_TEST_URL }}' burger-e2e:${{ github.sha }}
 
       - name: Configure Git
         run: |
@@ -100,6 +100,10 @@ jobs:
 
       - name: Commit changes in config repo and push to render_prod
         run: |
+          # update FRONTEND_URL to FRONTEND_PROD_URL
+          sed -i'' -e 's/FRONTEND_URL/${{ vars.FRONTEND_PROD_URL }}/g' config-repo/k8s.yaml
+
+          # add, commit, and push changes to render_prod branch
           git add -A # config-repo/k8s.yaml
           git commit -m "Updating k8s manifest from ref: ${{ github.sha }}"
           git push -u origin HEAD:render_prod
