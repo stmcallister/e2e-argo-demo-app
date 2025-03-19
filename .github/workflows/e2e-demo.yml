@@ -37,25 +37,25 @@ jobs:
           password: ${{ secrets.DOCKER_PASS }}
           logout: true
 
-      # - name: Build docker images
-      #   run: |
-      #     # Fails the build if anything returns non-zero
-      #     set -e
-      #     # Echo commands to the console
-      #     set -x
+      - name: Build docker images
+        run: |
+          # Fails the build if anything returns non-zero
+          set -e
+          # Echo commands to the console
+          set -x
 
-      #     # Build backend and frontend images
-      #     cd backend
-      #     docker build -t ${{ secrets.DOCKER_URL }}/burger-back:${{ github.sha }} .
-      #     cd ../frontend
-      #     docker build -t ${{ secrets.DOCKER_URL }}/burger-front:${{ github.sha }} .
-      #     cd ../
+          # Build backend and frontend images
+          cd backend
+          docker build -t ${{ secrets.DOCKER_URL }}/burger-back:${{ github.sha }} .
+          cd ../frontend
+          docker build -t ${{ secrets.DOCKER_URL }}/burger-front:${{ github.sha }} .
+          cd ../
 
-      # - name: Push Docker Images
-      #   run: |
-      #     # push docker images to dockerhub
-      #     docker push ${{ secrets.DOCKER_URL }}/burger-back:${{ github.sha }}
-      #     docker push ${{ secrets.DOCKER_URL }}/burger-front:${{ github.sha }}
+      - name: Push Docker Images
+        run: |
+          # push docker images to dockerhub
+          docker push ${{ secrets.DOCKER_URL }}/burger-back:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_URL }}/burger-front:${{ github.sha }}
 
       - name: Checkout config manifests
         uses: actions/checkout@v3
@@ -70,33 +70,37 @@ jobs:
           # Alter k8s.yaml to sed the version
           sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_TEST_URL }}/g' config-repo/k8s.yaml
 
-          # # Install ngrok ingress controller
-          # helm repo add ngrok https://charts.ngrok.com
-          # helm install ngrok-operator ngrok/ngrok-operator \
-          #   --namespace burgers \
-          #   --create-namespace \
-          #   --set credentials.apiKey=${{ secrets.NGROK_API_KEY }} \
-          #   --set credentials.authtoken=${{ secrets.NGROK_AUTHTOKEN }}
+          # Install ngrok ingress controller
+          helm repo add ngrok https://charts.ngrok.com
+          helm install ngrok-operator ngrok/ngrok-operator \
+            --namespace burgers \
+            --create-namespace \
+            --set credentials.apiKey=${{ secrets.NGROK_API_KEY }} \
+            --set credentials.authtoken=${{ secrets.NGROK_AUTHTOKEN }}
 
-          # # Run containers in k3s
-          # kubectl apply -f config-repo/k8s.yaml
+          # Run containers in k3s
+          kubectl apply -f config-repo/k8s.yaml
 
-      # - name: Setup upterm session
-      #   uses: lhotari/action-upterm@v1
-
-      # - name: Build Cypress Container and Run
-      #   # uses: cypress-io/github-action@v6
-      #   run: |
-      #     kubectl get all -A
-      #     # Launch cypress container
-      #     cd e2e/
-      #     docker build -t burger-e2e:${{ github.sha }} .
-      #     docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_TEST_URL }}' burger-e2e:${{ github.sha }}
+      - name: Build Cypress Container and Run
+        run: |
+          kubectl get all -A
+          # Launch cypress container
+          cd e2e/
+          docker build -t burger-e2e:${{ github.sha }} .
+          docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_TEST_URL }}' burger-e2e:${{ github.sha }}
 
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "stmcallister@gmail.com"
+
+      - name: Commit changes in config repo and push to render_test
+        run: |
+          # add, commit, and push changes to render_prod branch
+          git add -A 
+          git commit -m "Updating k8s manifest from ref: ${{ github.sha }}"
+          git push -u --force origin HEAD:render_test
+        working-directory: config-repo  
 
       - name: Commit changes in config repo and push to render_prod
         run: |

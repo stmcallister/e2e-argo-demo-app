@@ -1,5 +1,5 @@
 describe('burgerplace spec', () => {
-  const FRONTEND_URL = "https://scott-e2e-demo-test-1.ngrok.io";
+  const FRONTEND_URL = "https://scott-e2e-demo-test-2.ngrok.io";
   const BURGER_PLACE = "Dick's Drive-In";
 
   beforeEach(() => {
