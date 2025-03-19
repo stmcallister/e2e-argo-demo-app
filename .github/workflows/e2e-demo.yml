@@ -101,9 +101,9 @@ jobs:
           git status
           # git add config-repo/k8s.yaml
           # git commit -m "Updating k8s manifest"
-        # working-directory: ./
+        working-directory: config-repo
 
       - name: Push changes to config-repo
         run: |
           git push -u origin HEAD:render_prod
-        # working-directory: ./        
+        working-directory: config-repo       
