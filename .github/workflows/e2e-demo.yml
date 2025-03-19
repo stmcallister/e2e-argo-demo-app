@@ -106,5 +106,5 @@ jobs:
           # add, commit, and push changes to render_prod branch
           git add -A 
           git commit -m "Updating k8s manifest from ref: ${{ github.sha }}"
-          git push -u origin HEAD:render_prod
+          git push -u --force origin HEAD:render_prod
         working-directory: config-repo       
