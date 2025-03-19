@@ -57,10 +57,16 @@ jobs:
           docker push ${{ secrets.DOCKER_URL }}/burger-back:${{ github.sha }}
           docker push ${{ secrets.DOCKER_URL }}/burger-front:${{ github.sha }}
 
+      - name: Checkout config manifests
+        uses: actions/checkout@v3
+        with:
+          repository: stmcallister/e2e-argo-demo-config
+          path: config-repo
+
       - name: Configure and Deploy Cluster
         run: |
           # Alter k8s.yaml to sed the version
-          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_URL }}/g' k8s.yaml
+          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_URL }}/g' config-repo/k8s.yaml
 
           # Install ngrok ingress controller
           helm repo add ngrok https://charts.ngrok.com
@@ -71,7 +77,7 @@ jobs:
             --set credentials.authtoken=${{ secrets.NGROK_AUTHTOKEN }}
 
           # Run containers in k3s
-          kubectl apply -f k8s.yaml
+          kubectl apply -f config-repo/k8s.yaml
 
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
@@ -85,3 +91,18 @@ jobs:
           docker build -t burger-e2e:${{ github.sha }} .
           docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Commit changes in config repo
+        run: |
+          git add config-repo/k8s.yaml
+          git commit -m "Updating k8s manifest"
+        working-directory: ./
+
+      - name: Push changes to config-repo
+        run: |
+          git push -u origin HEAD:render_prod
+        working-directory: ./        
