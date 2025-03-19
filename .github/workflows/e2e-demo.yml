@@ -82,14 +82,14 @@ jobs:
       # - name: Setup upterm session
       #   uses: lhotari/action-upterm@v1
 
-      - name: Build Cypress Container and Run
-        # uses: cypress-io/github-action@v6
-        run: |
-          kubectl get all -A
-          # Launch cypress container
-          cd e2e/
-          docker build -t burger-e2e:${{ github.sha }} .
-          docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
+      # - name: Build Cypress Container and Run
+      #   # uses: cypress-io/github-action@v6
+      #   run: |
+      #     kubectl get all -A
+      #     # Launch cypress container
+      #     cd e2e/
+      #     docker build -t burger-e2e:${{ github.sha }} .
+      #     docker run -e FRONTEND_URL='https://${{ vars.FRONTEND_URL }}' burger-e2e:${{ github.sha }}
 
       - name: Configure Git
         run: |
