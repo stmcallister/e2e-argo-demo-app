@@ -68,7 +68,7 @@ jobs:
       - name: Configure and Deploy Cluster
         run: |
           # Alter k8s.yaml to sed the version
-          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_TEST_URL }}/g' config-repo/k8s.yaml
+          sed -i'' -e 's/DOCKER_URL/${{ secrets.DOCKER_URL }}/g' -e 's/IMAGE_LABEL/${{ github.sha }}/g' -e 's/FRONTEND_URL/${{ vars.FRONTEND_TEST_URL }}/g' config-repo/config/k8s.yaml
 
           # Install ngrok ingress controller
           helm repo add ngrok https://charts.ngrok.com
@@ -79,7 +79,7 @@ jobs:
             --set credentials.authtoken=${{ secrets.NGROK_AUTHTOKEN }}
 
           # Run containers in k3s
-          kubectl apply -f config-repo/k8s.yaml
+          kubectl apply -f config-repo/config/k8s.yaml
 
       - name: Build Cypress Container and Run
         run: |
