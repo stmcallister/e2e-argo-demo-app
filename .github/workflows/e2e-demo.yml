@@ -105,7 +105,7 @@ jobs:
       - name: Commit changes in config repo and push to render_prod
         run: |
           # update FRONTEND_URL to FRONTEND_PROD_URL
-          sed -i'' -e 's/${{ vars.FRONTEND_TEST_URL }}/${{ vars.FRONTEND_PROD_URL }}/g' k8s.yaml
+          sed -i'' -e 's/${{ vars.FRONTEND_TEST_URL }}/${{ vars.FRONTEND_PROD_URL }}/g' config/k8s.yaml
 
           # add, commit, and push changes to render_prod branch
           git add -A 
