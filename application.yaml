@@ -7,11 +7,12 @@ spec:
   project: default
   
   source:
-    repoURL: https://github.com/stmcallister/e2e-argo-demo.git
-    targetRevision: HEAD
+    repoURL: https://github.com/stmcallister/e2e-argo-demo-config.git
+    targetRevision: render_prod
+    path: config
   destination:
     server: https://kubernetes.default.svc
-    namespace: e2e-demo
+    namespace: burgers
 
   syncPolicy:
     syncOptions:
@@ -19,4 +20,4 @@ spec:
 
     automated:
       selfHeal: true
-      prune:
+      prune: true
