@@ -112,3 +112,9 @@ jobs:
           git commit -m "Updating k8s manifest from ref: ${{ github.sha }}"
           git push -u --force origin HEAD:render_prod
         working-directory: config-repo       
+      
+      - name: Clean up Test Cluster
+        run: |
+          kubectl delete -f config/k8s.yaml
+        working-directory: config-repo
+  
