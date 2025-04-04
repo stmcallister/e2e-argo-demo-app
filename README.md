@@ -3,6 +3,6 @@ This is a project that illustrates how to configure and execute end-to-end testi
 
 The application contains two containers, one for the frontend and one for the backend. There is also a container with the Cypress test code.
 
-The Kubernetes configuration code is in [e2e-argo-demo-app](https://github.com/stmcallister/e2e-argo-demo-config).
+The Kubernetes configuration code is in [e2e-argo-demo-config](https://github.com/stmcallister/e2e-argo-demo-config).
 
 C-sharp application used in this demo is heavily inspired by the project over at [Kubernetes Hands-on Workshop](https://github.com/robrich/kubernetes-hands-on-workshop) by Rob Richardson.
